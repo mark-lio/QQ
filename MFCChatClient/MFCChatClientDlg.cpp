@@ -7,7 +7,7 @@
 #include "MFCChatClient.h"
 #include "MFCChatClientDlg.h"
 #include "afxdialogex.h"
-
+#include <atlbase.h>
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -59,6 +59,9 @@ CMFCChatClientDlg::CMFCChatClientDlg(CWnd* pParent /*=nullptr*/)
 void CMFCChatClientDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_LIST1, m_list);
+	DDX_Control(pDX, IDC_SENDMSG_EDIT, m_input);
+	DDX_Control(pDX, IDC_COLOR_COMBO, m_WordColorCombo);
 }
 
 BEGIN_MESSAGE_MAP(CMFCChatClientDlg, CDialogEx)
@@ -67,6 +70,11 @@ BEGIN_MESSAGE_MAP(CMFCChatClientDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_CONNECT_BTN, &CMFCChatClientDlg::OnBnClickedConnectBtn)
 	ON_BN_CLICKED(IDC_DISCONNECT_BTN, &CMFCChatClientDlg::OnBnClickedDisconnectBtn)
+	ON_BN_CLICKED(IDC_SEND_BTN, &CMFCChatClientDlg::OnBnClickedSendBtn)
+	ON_BN_CLICKED(IDC_SAVENAME_BTN, &CMFCChatClientDlg::OnBnClickedSavenameBtn)
+	ON_BN_CLICKED(IDC_CLEARMSG_BTN, &CMFCChatClientDlg::OnBnClickedClearmsgBtn)
+	ON_BN_CLICKED(IDC_AUTOSEND_CHECK, &CMFCChatClientDlg::OnBnClickedAutosendmsgCheck)
+	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
 
 
@@ -102,6 +110,35 @@ BOOL CMFCChatClientDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	GetDlgItem(IDC_PORT_EDIT)->SetWindowText(_T("4399"));
+	GetDlgItem(IDC_IPADDRESS)->SetWindowText(_T("127.0.0.1"));
+	WCHAR wszName[MAX_PATH] = { 0 };
+	WCHAR strPath[MAX_PATH] = { 0 };
+	GetCurrentDirectoryW(MAX_PATH, strPath);
+	TRACE("##strPath=%ls", strPath);
+	CString strFilePath;
+	strFilePath.Format(L"%ls//test.ini", strPath);
+	DWORD dwNum= GetPrivateProfileStringW(_T("client"), _T("name"), NULL, wszName, MAX_PATH, strFilePath);
+	if (dwNum > 0) {
+		TRACE("##wszName=%ls", wszName);
+		SetDlgItemText(IDC_NAME_EDIT, wszName);
+		UpdateData(FALSE);
+	}
+	else {
+		WritePrivateProfileStringW(_T("client"), _T("name"), L"客户端", strFilePath);
+		SetDlgItemText(IDC_NAME_EDIT, L"客户端");
+		UpdateData(FALSE);
+	}
+	GetDlgItem(IDC_SEND_BTN)->EnableWindow(FALSE);
+	GetDlgItem(IDC_DISCONNECT_BTN)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CONNECT_BTN)->EnableWindow(TRUE);
+	GetDlgItem(IDC_AUTOSEND_CHECK)->EnableWindow(FALSE);
+	m_WordColorCombo.AddString(_T("黑色"));
+	m_WordColorCombo.AddString(_T("红色"));
+	m_WordColorCombo.AddString(_T("蓝色"));
+	m_WordColorCombo.AddString(_T("绿色"));
+	m_WordColorCombo.SetCurSel(0);
+	SetDlgItemText(IDC_COLOR_COMBO, _T("黑色"));
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -144,6 +181,18 @@ void CMFCChatClientDlg::OnPaint()
 	}
 	else
 	{
+		CPaintDC dc(this);
+		CRect rect;
+		GetClientRect(&rect);
+		CDC dcBmp;
+		dcBmp.CreateCompatibleDC(&dcBmp);
+		CBitmap bmpBackground;
+		bmpBackground.LoadBitmap(IDB_BITMAP_simple);
+		BITMAP bmp;
+		bmpBackground.GetBitmap(&bmp);
+		CBitmap* pBmp = dcBmp.SelectObject(&bmpBackground);
+		dc.StretchBlt(0, 0, rect.Width(), rect.Height(), &dcBmp,
+			0, 0, bmp.bmWidth, bmp.bmHeight, SRCCOPY);
 		CDialogEx::OnPaint();
 	}
 }
@@ -160,14 +209,195 @@ HCURSOR CMFCChatClientDlg::OnQueryDragIcon()
 void CMFCChatClientDlg::OnBnClickedConnectBtn()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	TRACE("[ChatClient]Connect Btn");
-	MessageBoxW(L"box");
-	
+	GetDlgItem(IDC_SEND_BTN)->EnableWindow(TRUE);
+	GetDlgItem(IDC_DISCONNECT_BTN)->EnableWindow(TRUE);
+	GetDlgItem(IDC_CONNECT_BTN)->EnableWindow(FALSE);
+	GetDlgItem(IDC_AUTOSEND_CHECK)->EnableWindow(TRUE);
+
+	TRACE("##OnBnClickedConnectBtn");
+	CString strPort, strIP;
+	GetDlgItem(IDC_PORT_EDIT)->GetWindowText(strPort);
+	GetDlgItem(IDC_IPADDRESS)->GetWindowText(strIP);
+	USES_CONVERSION;
+	LPCSTR szPort = (LPCSTR)T2A(strPort);
+	LPCSTR szIP = (LPCSTR)T2A(strIP);
+	TRACE("port=%s,ip=%s", szPort, szIP);
+	int iPort = _ttoi(strPort);
+	m_client = new CMySocket;
+	if (!m_client->Create()) {
+		TRACE("m_client->Create() error, %d", GetLastError());
+		return;
+	}
+	else {
+		TRACE("m_client->Create() success");
+	}
+	if (m_client->Connect(strIP, iPort) != SOCKET_ERROR) {
+		TRACE("##m_client->Connect(strIP, iPort) error,errorCode=%d", GetLastError());
+		return;
+	}
 }
 
 
 void CMFCChatClientDlg::OnBnClickedDisconnectBtn()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	GetDlgItem(IDC_SEND_BTN)->EnableWindow(FALSE);
+	GetDlgItem(IDC_DISCONNECT_BTN)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CONNECT_BTN)->EnableWindow(TRUE);
+	GetDlgItem(IDC_AUTOSEND_CHECK)->EnableWindow(FALSE);
+	m_client->Close();
+	if (m_client) {
+		delete m_client;
+		m_client = NULL;
+	}
+	CString strShow;
+	strShow = CatShowString(_T(""), _T("断开与服务器的连接"));
+	m_list.AddString(strShow);
+	UpdateData(FALSE);
+}
+
+CString CMFCChatClientDlg::CatShowString(CString strInfo,CString strMsg) {
+	CString strTime;
+	CTime tmNow;
+	tmNow = CTime::GetCurrentTime();
+	strTime = tmNow.Format("%X");
+	CString strShow;
+	strShow = strTime + strShow;
+	strShow += strInfo;
+	strShow += strMsg;
+	return strShow;
+}
+
+void CMFCChatClientDlg::OnBnClickedSendBtn()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CString strTmpMsg;
+	GetDlgItem(IDC_SENDMSG_EDIT)->GetWindowText(strTmpMsg);
+	CString strName;
+	GetDlgItem(IDC_NAME_EDIT)->GetWindowTextW(strName);
+	strTmpMsg = strName + _T(":") + strTmpMsg;
+	USES_CONVERSION;
+	char* szSendBuf = T2A(strTmpMsg);
+	m_client->Send(szSendBuf,MAX_SEND_BUF,0);
+	CString strShow;
+	/*CString strInfo = _T("我:");*/
+	strShow = CatShowString(_T(""), strTmpMsg);
+	/*CString strTime;
+	m_tm = CTime::GetCurrentTime();
+	strTime= m_tm.Format("%X");
+	strShow = strTime+strShow;
+	strShow += strTmpMsg;*/
+
+	m_list.AddString(strShow);
+	UpdateData(FALSE);
+	GetDlgItem(IDC_SENDMSG_EDIT)->SetWindowTextW(_T(""));
+
+}
+
+
+void CMFCChatClientDlg::OnBnClickedSavenameBtn()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CString strName;
+	GetDlgItemText(IDC_NAME_EDIT, strName);
+	if (strName.GetLength() <= 0) {
+		MessageBox(L"昵称不能为空!");
+		return;
+	}
+	if (IDOK == AfxMessageBox(_T("你真的要修改昵称吗?"), MB_OKCANCEL))
+	{
+		WCHAR strPath[MAX_PATH] = { 0 };
+		GetCurrentDirectoryW(MAX_PATH, strPath);
+		TRACE("##strPath=%ls", strPath);
+		CString strFilePath;
+		strFilePath.Format(L"%ls//test.ini", strPath);
+		WritePrivateProfileStringW(_T("client"), _T("name"), strName, strFilePath);
+	}
 	
+
+}
+
+
+void CMFCChatClientDlg::OnBnClickedClearmsgBtn()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_list.ResetContent();
+}
+
+
+void CMFCChatClientDlg::OnBnClickedAutosendmsgCheck()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	if (((CButton*)GetDlgItem(IDC_AUTOSEND_CHECK))->GetCheck()) {
+		TRACE("##不选中");
+		((CButton*)GetDlgItem(IDC_AUTOSEND_CHECK))->SetCheck(FALSE);
+	}
+	else {
+		TRACE("##选中");
+		((CButton*)GetDlgItem(IDC_AUTOSEND_CHECK))->SetCheck(TRUE);
+	}
+}
+
+
+HBRUSH CMFCChatClientDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+	CString strColor;
+	m_WordColorCombo.GetWindowTextW(strColor);
+// 	if (strColor == L"黑色") {
+// 		if (IDC_LIST1 == pWnd->GetDlgCtrlID() || IDC_SENDMSG_EDIT == pWnd->GetDlgCtrlID()) {
+// 			pDC->SetTextColor(RGB(0, 0, 0));
+// 		}
+// 	}
+// 	if (strColor == L"红色") {
+// 		if (IDC_LIST1 == pWnd->GetDlgCtrlID() || IDC_SENDMSG_EDIT == pWnd->GetDlgCtrlID()) {
+// 			pDC->SetTextColor(RGB(255, 0, 0));
+// 		}
+// 	}
+// 	if (strColor == L"绿色") {
+// 		if (IDC_LIST1 == pWnd->GetDlgCtrlID() || IDC_SENDMSG_EDIT == pWnd->GetDlgCtrlID()) {
+// 			pDC->SetTextColor(RGB(0, 255, 0));
+// 		}
+// 	}
+// 	if (strColor == L"蓝色") {
+// 		if (IDC_LIST1 == pWnd->GetDlgCtrlID() || IDC_SENDMSG_EDIT == pWnd->GetDlgCtrlID()) {
+// 			pDC->SetTextColor(RGB(0, 0, 255));
+// 		}
+// 	}
+	if (IDC_LIST1 == pWnd->GetDlgCtrlID() || IDC_SENDMSG_EDIT == pWnd->GetDlgCtrlID()) {
+		if (strColor == L"黑色") {
+			pDC->SetTextColor(RGB(0, 0, 0));
+		}
+		else if (strColor == L"红色") {
+			pDC->SetTextColor(RGB(255, 0, 0));
+		}
+		else if (strColor == L"绿色") {
+			pDC->SetTextColor(RGB(0, 255, 0));
+		}
+		else if (strColor == L"蓝色") {
+			pDC->SetTextColor(RGB(0, 0, 255));
+		}
+	}
+	return hbr;
+}
+
+
+BOOL CMFCChatClientDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO: 在此添加专用代码和/或调用基类
+	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN) {
+		return TRUE;
+	}
+	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_SPACE) {
+		return TRUE;
+	}
+	if (pMsg->message == WM_KEYDOWN ) {
+		if (GetKeyState(VK_CONTROL) < 0) {
+			if (pMsg->wParam == 'X') {
+				CDialogEx::OnOK();
+			}
+		}
+		
+	}
+	return CDialogEx::PreTranslateMessage(pMsg);
 }

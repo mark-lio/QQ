@@ -33,6 +33,9 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CMySocket.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFCChatClient.cpp">
@@ -42,6 +45,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CMySocket.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -57,6 +63,15 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\MFCChatClient.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="C:\Users\mark\Downloads\486f93527230e98bd702ab242e7b8617\1.bmp">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="C:\Users\mark\Downloads\486f93527230e98bd702ab242e7b8617\2.bmp">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="C:\Users\mark\Downloads\486f93527230e98bd702ab242e7b8617\3.bmp">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>

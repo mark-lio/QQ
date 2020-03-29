@@ -183,6 +183,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CMySocket.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MFCChatClient.h" />
     <ClInclude Include="MFCChatClientDlg.h" />
@@ -191,6 +192,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CMySocket.cpp" />
     <ClCompile Include="MFCChatClient.cpp" />
     <ClCompile Include="MFCChatClientDlg.cpp" />
     <ClCompile Include="pch.cpp">
@@ -207,6 +209,9 @@
     <None Include="res\MFCChatClient.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="C:\Users\mark\Downloads\486f93527230e98bd702ab242e7b8617\1.bmp" />
+    <Image Include="C:\Users\mark\Downloads\486f93527230e98bd702ab242e7b8617\2.bmp" />
+    <Image Include="C:\Users\mark\Downloads\486f93527230e98bd702ab242e7b8617\3.bmp" />
     <Image Include="res\MFCChatClient.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

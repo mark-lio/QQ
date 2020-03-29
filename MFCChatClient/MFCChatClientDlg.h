@@ -3,7 +3,7 @@
 //
 
 #pragma once
-
+#include "CMySocket.h"
 
 // CMFCChatClientDlg 对话框
 class CMFCChatClientDlg : public CDialogEx
@@ -35,4 +35,16 @@ public:
 	afx_msg void OnLbnSelchangeList1();
 	afx_msg void OnBnClickedConnectBtn();
 	afx_msg void OnBnClickedDisconnectBtn();
+	CMySocket* m_client;
+	CListBox m_list;
+	//CTime m_tm;
+	CEdit m_input;
+	afx_msg void OnBnClickedSendBtn();
+	CString CatShowString(CString strInfo,CString strMsg);
+	afx_msg void OnBnClickedSavenameBtn();
+	afx_msg void OnBnClickedClearmsgBtn();
+	afx_msg void OnBnClickedAutosendmsgCheck();
+	CComboBox m_WordColorCombo;
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };
